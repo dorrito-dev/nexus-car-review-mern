@@ -1,7 +1,15 @@
-import { Flex, Box, Text, Button, Stack, Container } from '@chakra-ui/react'
-import { Car, User, ShieldCheck } from 'lucide-react'
+import { Flex, Box, Text, Button, Stack, Container, Menu } from '@chakra-ui/react'
+import { Car, User as UserIcon, ShieldCheck, LogOut, ChevronDown, LogIn } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Navbar({ currentView, setCurrentView }) {
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    setCurrentView('public');
+  };
+
   const NavItem = ({ viewId, icon: Icon, label }) => {
     const isActive = currentView === viewId;
     return (
@@ -57,10 +65,46 @@ export default function Navbar({ currentView, setCurrentView }) {
             </Text>
           </Flex>
 
-          <Stack direction="row" gap={2}>
+          <Stack direction="row" gap={2} align="center">
             <NavItem viewId="public" icon={Car} label="Explore" />
-            <NavItem viewId="user" icon={User} label="Dashboard" />
-            <NavItem viewId="admin" icon={ShieldCheck} label="Admin" />
+            
+            {!user ? (
+              <Button
+                onClick={() => setCurrentView('login')}
+                bg="var(--accent-primary)"
+                color="var(--bg-base)"
+                borderRadius="full"
+                px={6}
+                fontWeight="600"
+                _hover={{ opacity: 0.9 }}
+                _active={{ transform: "scale(0.98)" }}
+                display="flex"
+                alignItems="center"
+                gap={2}
+              >
+                <LogIn size={16} /> <Text display={{ base: "none", md: "block" }}>Login</Text>
+              </Button>
+            ) : (
+              <>
+                {user.role === 'user' && <NavItem viewId="user" icon={UserIcon} label="Dashboard" />}
+                {user.role === 'admin' && <NavItem viewId="admin" icon={ShieldCheck} label="Admin" />}
+                
+                <Box pl={2} borderLeft="1px solid var(--glass-border)">
+                  <Button
+                    variant="ghost"
+                    onClick={handleLogout}
+                    color="red.400"
+                    _hover={{ bg: "red.900", color: "red.300" }}
+                    borderRadius="full"
+                    display="flex"
+                    alignItems="center"
+                    gap={2}
+                  >
+                    <LogOut size={16} /> <Text display={{ base: "none", md: "block" }}>Logout</Text>
+                  </Button>
+                </Box>
+              </>
+            )}
           </Stack>
         </Flex>
       </Container>

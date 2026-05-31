@@ -58,7 +58,7 @@ export default function PublicView({ onReadReview }) {
   const [selectedType, setSelectedType] = useState('')
   const [selectedBrand, setSelectedBrand] = useState('')
   const [priceRange, setPriceRange] = useState({ min: 50000, max: 250000 })
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false)
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false)
 
   const availableBrands = useMemo(() => Array.from(new Set(mockCars.map(c => c.make))), [])
   const isFilterActive = selectedType !== '' || selectedBrand !== '' || priceRange.min > 50000 || priceRange.max < 250000
@@ -80,7 +80,6 @@ export default function PublicView({ onReadReview }) {
 
   const FilterControls = () => (
     <Stack gap={6} w="100%">
-      {/* Car Type Pills */}
       <Box>
         <Text fontSize="xs" fontWeight="600" color="var(--accent-muted)" textTransform="uppercase" letterSpacing="widest" mb={3}>
           Car Type
@@ -113,7 +112,6 @@ export default function PublicView({ onReadReview }) {
         </Flex>
       </Box>
 
-      {/* Brand Dropdown */}
       <Box>
         <Text fontSize="xs" fontWeight="600" color="var(--accent-muted)" textTransform="uppercase" letterSpacing="widest" mb={3}>
           Brand
@@ -144,7 +142,6 @@ export default function PublicView({ onReadReview }) {
         </Box>
       </Box>
 
-      {/* Price Slider */}
       <Box px={2}>
         <Text fontSize="xs" fontWeight="600" color="var(--accent-muted)" textTransform="uppercase" letterSpacing="widest" mb={2}>
           Price Range
@@ -213,117 +210,93 @@ export default function PublicView({ onReadReview }) {
         </Box>
       </Box>
 
-      {/* Desktop Filter Bar */}
-      <Box 
-        display={{ base: 'none', md: 'block' }}
-        bg="rgba(15, 17, 21, 0.7)"
-        backdropFilter="blur(16px)"
-        border="1px solid var(--glass-border)"
-        borderRadius="2xl"
-        p={6}
-        mb={12}
-      >
-        <Flex gap={10} align="flex-start">
-          <Box flex="2"><FilterControls /></Box>
-          <Box flex="1" display="flex" flexDirection="column" alignItems="flex-end" justify="center" h="100%" pt={4}>
-            <AnimatePresence>
-              {isFilterActive && (
-                <Box
-                  as={motion.button}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  onClick={clearFilters}
-                  color="var(--accent-muted)"
-                  fontSize="sm"
-                  fontWeight="500"
-                  _hover={{ color: 'white' }}
-                  transition="all 0.2s ease"
-                  display="flex"
-                  alignItems="center"
-                  gap={2}
-                >
-                  <X size={16} /> Clear Filters
-                </Box>
-              )}
-            </AnimatePresence>
-            {isFilterActive && (
-              <Box mt={4} display="flex" alignItems="center" gap={2}>
-                <Box w={2} h={2} borderRadius="full" bg="var(--accent-primary)" boxShadow="0 0 8px var(--accent-primary)" />
-                <Text fontSize="sm" color="var(--accent-primary)">Filters Active</Text>
-              </Box>
-            )}
-          </Box>
-        </Flex>
-      </Box>
-
-      {/* Mobile Filter Button */}
-      <Flex 
-        display={{ base: 'flex', md: 'none' }} 
-        justify="flex-end" 
-        mb={6}
-      >
+      {/* Filter Toggle Button */}
+      <Flex justify="flex-end" mb={6}>
         <Box
           as="button"
-          onClick={() => setIsMobileFiltersOpen(!isMobileFiltersOpen)}
+          onClick={() => setIsFiltersOpen(!isFiltersOpen)}
           display="flex"
           alignItems="center"
           gap={2}
           bg="rgba(255,255,255,0.05)"
           border="1px solid var(--glass-border)"
-          px={4}
-          py={2}
+          px={5}
+          py={2.5}
           borderRadius="full"
           color={isFilterActive ? 'var(--accent-primary)' : 'white'}
+          transition="var(--transition-smooth)"
+          _hover={{ bg: 'rgba(255,255,255,0.1)' }}
         >
-          <SlidersHorizontal size={16} />
+          <SlidersHorizontal size={18} />
           <Text fontSize="sm" fontWeight="500">Filters</Text>
-          {isFilterActive && <Box w={2} h={2} borderRadius="full" bg="var(--accent-primary)" />}
+          {isFilterActive && <Box w={2} h={2} borderRadius="full" bg="var(--accent-primary)" boxShadow="0 0 8px var(--accent-primary)" />}
         </Box>
       </Flex>
 
-      {/* Mobile Drawer (Simulated with absolute positioning for standard Chakra compatibility) */}
+      {/* Collapsible Filter Panel (Desktop & Mobile Unified) */}
       <AnimatePresence>
-        {isMobileFiltersOpen && (
+        {isFiltersOpen && (
           <Box
             as={motion.div}
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            display={{ base: 'block', md: 'none' }}
-            bg="var(--bg-surface)"
-            border="1px solid var(--glass-border)"
-            borderRadius="2xl"
-            p={6}
+            initial={{ opacity: 0, height: 0, y: -10 }}
+            animate={{ opacity: 1, height: 'auto', y: 0 }}
+            exit={{ opacity: 0, height: 0, y: -10 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            overflow="hidden"
             mb={8}
-            boxShadow="0 -10px 40px rgba(0,0,0,0.5)"
           >
-            <Flex justify="space-between" align="center" mb={6}>
-              <Heading size="sm">Filters</Heading>
-              <IconButton 
-                icon={<X size={18} />} 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setIsMobileFiltersOpen(false)}
-                color="var(--accent-muted)"
-              />
-            </Flex>
-            <FilterControls />
-            {isFilterActive && (
-              <Box
-                as="button"
-                w="100%"
-                mt={8}
-                py={3}
-                bg="rgba(255,255,255,0.1)"
-                borderRadius="xl"
-                color="white"
-                fontWeight="500"
-                onClick={clearFilters}
-              >
-                Clear All Filters
-              </Box>
-            )}
+            <Box
+              bg="rgba(15, 17, 21, 0.7)"
+              backdropFilter="blur(16px)"
+              border="1px solid var(--glass-border)"
+              borderRadius="2xl"
+              p={{ base: 6, md: 8 }}
+              boxShadow="0 20px 40px rgba(0,0,0,0.4)"
+            >
+              <Flex justify="space-between" align="center" mb={6} display={{ base: 'flex', md: 'none' }}>
+                <Heading size="sm">Filters</Heading>
+                <IconButton 
+                  icon={<X size={18} />} 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsFiltersOpen(false)}
+                  color="var(--accent-muted)"
+                />
+              </Flex>
+              
+              <Flex gap={{ base: 6, md: 10 }} direction={{ base: 'column', md: 'row' }} align="flex-start">
+                <Box flex="2" w="100%"><FilterControls /></Box>
+                <Box flex="1" display="flex" flexDirection="column" alignItems={{ base: 'flex-start', md: 'flex-end' }} justify={{ md: 'center' }} h="100%" pt={{ base: 4, md: 8 }} w="100%">
+                  <AnimatePresence>
+                    {isFilterActive && (
+                      <Box
+                        as={motion.button}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        onClick={clearFilters}
+                        color="var(--accent-primary)"
+                        fontSize="sm"
+                        fontWeight="600"
+                        bg="rgba(255,255,255,0.05)"
+                        px={4}
+                        py={2}
+                        borderRadius="full"
+                        _hover={{ bg: 'rgba(255,255,255,0.1)' }}
+                        transition="all 0.2s ease"
+                        display="flex"
+                        alignItems="center"
+                        gap={2}
+                        w={{ base: '100%', md: 'auto' }}
+                        justifyContent={{ base: 'center', md: 'flex-end' }}
+                      >
+                        <X size={16} /> Clear All Filters
+                      </Box>
+                    )}
+                  </AnimatePresence>
+                </Box>
+              </Flex>
+            </Box>
           </Box>
         )}
       </AnimatePresence>

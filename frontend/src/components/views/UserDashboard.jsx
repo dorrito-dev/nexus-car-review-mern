@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { Box, Heading, Text, Input, Textarea, Button, Flex, Stack, SimpleGrid, Spinner, Grid, GridItem } from '@chakra-ui/react'
-import { UploadCloud, Star, PenTool, DollarSign, Link } from 'lucide-react'
+import { Box, Heading, Text, Input, Textarea, Button, Flex, Stack, SimpleGrid, Spinner, Grid, GridItem, Badge } from '@chakra-ui/react'
+import { UploadCloud, Star, PenTool, DollarSign, Link, AlertTriangle } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useAuth } from '../../context/AuthContext'
 
 export default function UserDashboard() {
+  const { user } = useAuth()
   const [rating, setRating] = useState(0)
   const [hoveredStar, setHoveredStar] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const isPending = user?.status === 'pending'
 
   const handleSubmit = () => {
     setIsSubmitting(true)
@@ -30,15 +34,33 @@ export default function UserDashboard() {
 
   return (
     <Box maxW="1400px" mx="auto">
+      {isPending && (
+        <Flex 
+          bg="rgba(255, 165, 0, 0.1)" 
+          border="1px solid rgba(255, 165, 0, 0.3)" 
+          p={4} 
+          borderRadius="xl" 
+          mb={8} 
+          align="center" 
+          gap={3}
+          color="orange.300"
+        >
+          <AlertTriangle size={20} />
+          <Text fontWeight="500">Your account is pending Admin approval. You cannot submit public reviews yet.</Text>
+        </Flex>
+      )}
+
       <Grid templateColumns={{ base: '1fr', lg: '1fr 2fr 1fr' }} gap={10} alignItems="start">
         
         {/* Left Panel: History & Profile */}
         <GridItem pr={{ lg: 8 }} borderRight={{ lg: '1px solid var(--glass-border)' }}>
           <Box mb={8} display="flex" flexDirection="column" alignItems="center" textAlign="center">
             <Box w="80px" h="80px" borderRadius="full" bg="whiteAlpha.100" mb={4} display="flex" alignItems="center" justifyContent="center" border="1px solid var(--glass-border)">
-              <Text fontSize="2xl" fontWeight="500" color="var(--accent-primary)">DR</Text>
+              <Text fontSize="2xl" fontWeight="500" color="var(--accent-primary)">
+                {user?.name ? user.name.substring(0, 2).toUpperCase() : 'DR'}
+              </Text>
             </Box>
-            <Heading size="sm" mb={1} fontWeight="600" letterSpacing="tight">Driver Nexus</Heading>
+            <Heading size="sm" mb={1} fontWeight="600" letterSpacing="tight">{user?.name || 'Driver Nexus'}</Heading>
             <Text color="var(--accent-muted)" fontSize="xs">Enthusiast Reviewer</Text>
           </Box>
 
@@ -54,11 +76,22 @@ export default function UserDashboard() {
               <Flex gap={3} align="center"><Star size={16} color="var(--accent-muted)"/><Text fontSize="sm" color="var(--accent-muted)">Helpful Votes</Text></Flex>
               <Text fontWeight="600" fontSize="md">340</Text>
             </Flex>
+            
+            {/* Example of Pending Review Badge in History */}
+            <Box mt={6} p={4} bg="rgba(255,255,255,0.03)" borderRadius="xl" border="1px solid var(--glass-border)">
+              <Flex justify="space-between" align="start" mb={2}>
+                <Text fontSize="sm" fontWeight="600" color="var(--accent-primary)">Porsche 911 GT3</Text>
+                <Badge colorScheme="orange" variant="subtle" fontSize="2xs" px={2} py={0.5} borderRadius="full">
+                  Pending Approval
+                </Badge>
+              </Flex>
+              <Text fontSize="xs" color="var(--accent-muted)">Submitted today</Text>
+            </Box>
           </Box>
         </GridItem>
 
         {/* Center Panel: The Canvas */}
-        <GridItem className="glass-panel" p={{ base: 6, md: 10 }}>
+        <GridItem className="glass-panel" p={{ base: 6, md: 10 }} opacity={isPending ? 0.6 : 1} pointerEvents={isPending ? 'none' : 'auto'}>
           <Box mb={8}>
             <Heading size="xl" mb={2} fontWeight="400" letterSpacing="tight">Draft a Review</Heading>
             <Text color="var(--accent-muted)">Share your detailed driving experience with the community.</Text>
@@ -150,7 +183,7 @@ export default function UserDashboard() {
                 whileHover={{ y: -1, boxShadow: '0 10px 25px -5px rgba(255,255,255,0.1)' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPending}
                 size="lg" 
                 bg="linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(200,200,200,1) 100%)" 
                 color="black" 
