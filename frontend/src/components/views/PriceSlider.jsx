@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Box, Flex, Text } from '@chakra-ui/react'
 
-export default function PriceSlider({ min, max, onChange }) {
-  const [minVal, setMinVal] = useState(min)
-  const [maxVal, setMaxVal] = useState(max)
-  const minValRef = useRef(min)
-  const maxValRef = useRef(max)
+export default function PriceSlider({ min, max, onChangeEnd, initialValue }) {
+  const [minVal, setMinVal] = useState(initialValue?.[0] ?? min)
+  const [maxVal, setMaxVal] = useState(initialValue?.[1] ?? max)
+  const minValRef = useRef(initialValue?.[0] ?? min)
+  const maxValRef = useRef(initialValue?.[1] ?? max)
   const range = useRef(null)
 
   // Convert to percentage
@@ -14,8 +14,19 @@ export default function PriceSlider({ min, max, onChange }) {
     [min, max]
   )
 
+  useEffect(() => {
+    if (initialValue) {
+      setMinVal(initialValue[0])
+      setMaxVal(initialValue[1])
+      minValRef.current = initialValue[0]
+      maxValRef.current = initialValue[1]
+    }
+  }, [initialValue])
+
   const handleMouseUp = () => {
-    onChange({ min: minVal, max: maxVal })
+    if (onChangeEnd) {
+      onChangeEnd([minVal, maxVal])
+    }
   }
 
   // Update track width when minVal changes

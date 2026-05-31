@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { Box, Flex, Heading, Text, Stack, Input, Button, Link } from '@chakra-ui/react';
 import { useAuth } from '../../context/AuthContext';
 import { Car } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-export default function AuthForms({ currentView, setCurrentView }) {
+export default function AuthForms() {
   const { login, register, isLoading, error } = useAuth();
+  const navigate = useNavigate();
+  const [currentView, setCurrentView] = useState('login');
   
   // Login State
   const [loginEmail, setLoginEmail] = useState('');
@@ -21,7 +24,7 @@ export default function AuthForms({ currentView, setCurrentView }) {
     e.preventDefault();
     try {
       const user = await login(loginEmail, loginPassword);
-      setCurrentView(user.role === 'admin' ? 'admin' : 'user');
+      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
     } catch (err) {
       // Error is handled in context
     }
@@ -36,7 +39,7 @@ export default function AuthForms({ currentView, setCurrentView }) {
         password: regPassword,
         contactInfo: { phone: regPhone, address: regAddress }
       });
-      setCurrentView('user'); // New users are always 'user' role
+      navigate('/dashboard'); // New users are always 'user' role
     } catch (err) {
       // Error handled in context
     }

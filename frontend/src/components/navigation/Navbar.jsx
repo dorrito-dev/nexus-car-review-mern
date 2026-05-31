@@ -1,21 +1,25 @@
-import { Flex, Box, Text, Button, Stack, Container, Menu } from '@chakra-ui/react'
-import { Car, User as UserIcon, ShieldCheck, LogOut, ChevronDown, LogIn } from 'lucide-react'
+import { Flex, Box, Text, Button, Stack, Container } from '@chakra-ui/react'
+import { Car, User as UserIcon, ShieldCheck, LogOut, LogIn } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
-export default function Navbar({ currentView, setCurrentView }) {
+export default function Navbar() {
   const { user, logout } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    setCurrentView('public');
+    navigate('/');
   };
 
-  const NavItem = ({ viewId, icon: Icon, label }) => {
-    const isActive = currentView === viewId;
+  const NavItem = ({ to, icon: Icon, label }) => {
+    const isActive = location.pathname === to;
     return (
       <Button
+        as={Link}
+        to={to}
         variant="ghost"
-        onClick={() => setCurrentView(viewId)}
         color={isActive ? "var(--accent-primary)" : "var(--accent-muted)"}
         _hover={{ bg: "whiteAlpha.100", color: "var(--accent-primary)" }}
         _active={{ transform: "scale(0.98)" }}
@@ -50,10 +54,11 @@ export default function Navbar({ currentView, setCurrentView }) {
         <Flex justify="space-between" align="center">
           
           <Flex 
+            as={Link}
+            to="/"
             align="center" 
             gap={3} 
             cursor="pointer" 
-            onClick={() => setCurrentView('public')}
             _hover={{ opacity: 0.8 }}
             transition="var(--transition-smooth)"
           >
@@ -66,11 +71,12 @@ export default function Navbar({ currentView, setCurrentView }) {
           </Flex>
 
           <Stack direction="row" gap={2} align="center">
-            <NavItem viewId="public" icon={Car} label="Explore" />
+            <NavItem to="/" icon={Car} label="Explore" />
             
             {!user ? (
               <Button
-                onClick={() => setCurrentView('login')}
+                as={Link}
+                to="/login"
                 bg="var(--accent-primary)"
                 color="var(--bg-base)"
                 borderRadius="full"
@@ -86,8 +92,8 @@ export default function Navbar({ currentView, setCurrentView }) {
               </Button>
             ) : (
               <>
-                {user.role === 'user' && <NavItem viewId="user" icon={UserIcon} label="Dashboard" />}
-                {user.role === 'admin' && <NavItem viewId="admin" icon={ShieldCheck} label="Admin" />}
+                {user.role === 'user' && <NavItem to="/dashboard" icon={UserIcon} label="Dashboard" />}
+                {user.role === 'admin' && <NavItem to="/admin" icon={ShieldCheck} label="Admin" />}
                 
                 <Box pl={2} borderLeft="1px solid var(--glass-border)">
                   <Button

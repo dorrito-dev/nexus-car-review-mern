@@ -9,7 +9,7 @@ import api from '../../utils/axiosConfig'
 import { useAuth } from '../../context/AuthContext'
 
 export default function AdminPanel() {
-  const { user: authUser } = useAuth()
+  const { user: authUser, isLoading: isAuthLoading } = useAuth()
   const activeAdminId = authUser?._id || authUser?.id
   const [activeTab, setActiveTab] = useState('users')
   
@@ -139,6 +139,22 @@ export default function AdminPanel() {
     } finally {
       setIsActionLoading(false)
     }
+  }
+
+  if (isAuthLoading) {
+    return (
+      <Flex h="60vh" justify="center" align="center">
+        <Spinner size="xl" color="var(--accent-primary)" />
+      </Flex>
+    )
+  }
+
+  if (!authUser || authUser.role !== 'admin') {
+    return (
+      <Flex h="60vh" justify="center" align="center" direction="column" gap={4}>
+         <Heading size="md" color="red.400">Unauthorized Access.</Heading>
+      </Flex>
+    )
   }
 
   return (
@@ -335,8 +351,8 @@ export default function AdminPanel() {
                 >
                   <Badge colorScheme="orange" mb={3}>Pending</Badge>
                   <Heading size="md" mb={2}>{review.make} {review.model}</Heading>
-                  <Text color="var(--accent-muted)" fontSize="sm" mb={4} noOfLines={3}>
-                    {review.reviewText}
+                  <Text noOfLines={3} color="var(--accent-muted)" fontSize="sm" mb={4}>
+                    {review.content}
                   </Text>
                   <Flex justify="space-between" fontSize="xs" color="var(--accent-muted)">
                     <Text>By: {review.user?.name || 'Unknown'}</Text>
@@ -349,42 +365,42 @@ export default function AdminPanel() {
         </Box>
       )}
 
-      {/* Review Moderation Drawer (Custom framer-motion implementation instead of Chakra v3 Drawer) */}
+      {/* Review Moderation Drawer */}
       <AnimatePresence>
         {isDrawerOpen && selectedReview && (
-          <Box 
-            position="fixed" 
-            top="0" left="0" right="0" bottom="0" 
-            zIndex={1000} 
-            display="flex"
-            justifyContent="flex-end"
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              backdropFilter: 'blur(10px)',
+              zIndex: 999,
+              display: 'flex',
+              justifyContent: 'flex-end'
+            }}
           >
-            <Box 
-              as={motion.div}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              position="absolute"
-              top="0" left="0" right="0" bottom="0"
-              bg="rgba(0,0,0,0.6)"
-              backdropFilter="blur(5px)"
-              onClick={() => setIsDrawerOpen(false)}
-            />
-            
-            <Box
-              as={motion.div}
+            <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              position="relative"
-              w={{ base: '100%', md: '500px' }}
-              h="100%"
-              bg="var(--bg-base)"
-              borderLeft="1px solid var(--glass-border)"
-              boxShadow="-10px 0 30px rgba(0,0,0,0.5)"
-              p={6}
-              overflowY="auto"
+              style={{
+                position: 'relative',
+                width: '100%',
+                maxWidth: '500px',
+                height: '100%',
+                backgroundColor: 'var(--bg-base)',
+                borderLeft: '1px solid var(--glass-border)',
+                boxShadow: '-10px 0 30px rgba(0,0,0,0.5)',
+                padding: '24px',
+                overflowY: 'auto'
+              }}
             >
               <IconButton 
                 icon={<X size={20} />} 
@@ -416,8 +432,8 @@ export default function AdminPanel() {
 
                 <Box>
                   <Text fontSize="xs" color="var(--accent-muted)" textTransform="uppercase" mb={2}>Review Content</Text>
-                  <Box p={4} bg="rgba(255,255,255,0.03)" borderRadius="xl" border="1px solid var(--glass-border)">
-                    <Text fontSize="sm" whiteSpace="pre-wrap" lineHeight="1.6">{selectedReview.reviewText}</Text>
+                  <Box bg="rgba(0,0,0,0.2)" p={4} borderRadius="xl" border="1px solid rgba(255,255,255,0.05)">
+                    <Text fontSize="sm" whiteSpace="pre-wrap" lineHeight="1.6">{selectedReview.content}</Text>
                   </Box>
                 </Box>
 
@@ -434,7 +450,7 @@ export default function AdminPanel() {
 
                 <Box mt={6} pt={6} borderTop="1px solid var(--glass-border)">
                   {isRejecting ? (
-                    <Box as={motion.div} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
                       <Text mb={2} fontSize="sm" fontWeight="600" color="red.400">Rejection Reason</Text>
                       <Textarea 
                         value={adminMessage}
@@ -446,7 +462,7 @@ export default function AdminPanel() {
                         <Button variant="ghost" onClick={() => setIsRejecting(false)} disabled={isActionLoading}>Cancel</Button>
                         <Button colorScheme="red" onClick={() => handleRejectReview(selectedReview._id)} isLoading={isActionLoading}>Confirm Rejection</Button>
                       </Flex>
-                    </Box>
+                    </motion.div>
                   ) : (
                     <Flex gap={4} justify="flex-end">
                       <Button variant="outline" colorScheme="red" onClick={() => handleRejectReview()} flex="1">
@@ -459,8 +475,8 @@ export default function AdminPanel() {
                   )}
                 </Box>
               </Stack>
-            </Box>
-          </Box>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </Box>

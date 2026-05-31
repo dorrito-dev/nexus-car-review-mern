@@ -1,0 +1,27 @@
+{
+  "alice@example.com": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWMyY2ZjZDVhNTU4NzdmODk2Njg3YiIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzgwMjMxNDIzLCJleHAiOjE3ODI4MjM0MjN9.ELIBL86QjOTJqh05ZGaK5jyw9diSb1IgmuPVDyNpPKA",
+    "id": "6a1c2cfcd5a55877f896687b",
+    "status": "pending"
+  },
+  "bob@example.com": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWMyY2ZkZDVhNTU4NzdmODk2Njg3YyIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzgwMjMxNDIzLCJleHAiOjE3ODI4MjM0MjN9.UdizOhGVwohNy4RAs44JJyb4kBn8ECZlc3dsNXwxtoY",
+    "id": "6a1c2cfdd5a55877f896687c",
+    "status": "pending"
+  },
+  "charlie@example.com": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWMyY2ZkZDVhNTU4NzdmODk2Njg3ZCIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzgwMjMxNDIzLCJleHAiOjE3ODI4MjM0MjN9.YQwyVyhyc-OgIfjE5gnPq_tUx5RpCPZw0AtkqyN2Oxo",
+    "id": "6a1c2cfdd5a55877f896687d",
+    "status": "pending"
+  },
+  "diana@example.com": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWMyY2ZlZDVhNTU4NzdmODk2Njg3ZSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzgwMjMxNDIzLCJleHAiOjE3ODI4MjM0MjN9.vjIRG0AAHLc1wLJSFCtM381-7UG6q2RB16Cn8mIe3_I",
+    "id": "6a1c2cfed5a55877f896687e",
+    "status": "pending"
+  },
+  "evan@example.com": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMWMyY2ZlZDVhNTU4NzdmODk2Njg3ZiIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzgwMjMxNDI0LCJleHAiOjE3ODI4MjM0MjR9.Q6h6wFpZaHONTw8XwpoHaXwPBTaLCmGU9O8yxoYC_uc",
+    "id": "6a1c2cfed5a55877f896687f",
+    "status": "pending"
+  }
+}

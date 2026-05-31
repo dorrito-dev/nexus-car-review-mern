@@ -3,7 +3,7 @@ import { Box, Flex, Input, IconButton, Kbd } from '@chakra-ui/react'
 import { Search, SlidersHorizontal } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function SearchWidget() {
+export default function SearchWidget({ searchQuery, setSearchQuery, onFilterClick }) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef(null)
@@ -105,8 +105,8 @@ export default function SearchWidget() {
                 color="var(--accent-primary)"
                 _placeholder={{ color: 'whiteAlpha.600' }}
                 className="minimal-input"
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 bg="transparent"
                 border="none"
                 _focus={{ outline: 'none', boxShadow: 'none' }}
@@ -139,6 +139,7 @@ export default function SearchWidget() {
                 _active={{ transform: 'scale(0.95)' }}
                 transition="var(--transition-smooth)"
                 bg="transparent"
+                onClick={onFilterClick}
               >
                 <SlidersHorizontal size={18} strokeWidth={1.5} />
               </IconButton>

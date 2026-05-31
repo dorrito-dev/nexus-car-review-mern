@@ -32,3 +32,6 @@ out/
 *.njsproj
 *.sln
 *.sw?
+ 
+# Seed directory
+seed/

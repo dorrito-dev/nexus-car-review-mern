@@ -6,14 +6,15 @@ import { useAuth } from '../../context/AuthContext'
 import api from '../../utils/axiosConfig'
 
 export default function UserDashboard() {
-  const { user } = useAuth()
+  const { user, isLoading: isAuthLoading } = useAuth()
   
   // Form State
   const [make, setMake] = useState('')
   const [model, setModel] = useState('')
   const [year, setYear] = useState('')
+  const [type, setType] = useState('Sedan') // default type
   const [rating, setRating] = useState(0)
-  const [reviewText, setReviewText] = useState('')
+  const [content, setContent] = useState('')
   const [price, setPrice] = useState('')
   const [referenceLink, setReferenceLink] = useState('')
   const [keySpecs, setKeySpecs] = useState('')
@@ -46,8 +47,8 @@ export default function UserDashboard() {
   }
 
   const handleSubmit = async () => {
-    if (!make || !model || !rating || !reviewText) {
-      alert('Missing Fields: Please provide make, model, rating, and review details.')
+    if (!make || !model || !rating || !content || !price) {
+      alert('Missing Fields: Please provide make, model, price, rating, and review details.')
       return
     }
 
@@ -57,8 +58,9 @@ export default function UserDashboard() {
         make,
         model,
         year: year ? parseInt(year) : 2024,
+        type,
         rating,
-        reviewText,
+        content,
         price,
         referenceLink,
         keySpecs,
@@ -73,8 +75,9 @@ export default function UserDashboard() {
       setMake('')
       setModel('')
       setYear('')
+      setType('Sedan')
       setRating(0)
-      setReviewText('')
+      setContent('')
       setPrice('')
       setReferenceLink('')
       setKeySpecs('')
@@ -122,6 +125,22 @@ export default function UserDashboard() {
     if (activeTab === 'All') return true
     return review.status === activeTab.toLowerCase()
   })
+
+  if (isAuthLoading) {
+    return (
+      <Flex h="60vh" justify="center" align="center">
+        <Spinner size="xl" color="var(--accent-primary)" />
+      </Flex>
+    )
+  }
+
+  if (!user) {
+    return (
+      <Flex h="60vh" justify="center" align="center" direction="column" gap={4}>
+         <Heading size="md" color="var(--accent-muted)">Authentication required to view your dashboard.</Heading>
+      </Flex>
+    )
+  }
 
   return (
     <Box maxW="1400px" mx="auto">
@@ -174,7 +193,7 @@ export default function UserDashboard() {
                   transition="all 0.2s"
                   bg={activeTab === tab ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)'}
                   color={activeTab === tab ? 'black' : 'var(--accent-muted)'}
-                  _hover={activeTab !== tab && { bg: 'rgba(255,255,255,0.1)', color: 'white' }}
+                  _hover={activeTab !== tab ? { bg: 'rgba(255,255,255,0.1)', color: 'white' } : {}}
                 >
                   {tab}
                 </Box>
@@ -191,19 +210,20 @@ export default function UserDashboard() {
               <Stack gap={4}>
                 <AnimatePresence mode="popLayout">
                   {filteredReviews.map((review) => (
-                    <Box 
+                    <motion.div
                       key={review._id}
-                      as={motion.div}
                       layout
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      p={4} 
-                      bg="rgba(255,255,255,0.03)" 
-                      borderRadius="xl" 
-                      border="1px solid"
-                      borderColor={review.status === 'rejected' ? 'red.800' : 'var(--glass-border)'}
                     >
+                      <Box 
+                        p={4} 
+                        bg="rgba(255,255,255,0.03)" 
+                        borderRadius="xl" 
+                        border="1px solid"
+                        borderColor={review.status === 'rejected' ? 'red.800' : 'var(--glass-border)'}
+                      >
                       <Flex justify="space-between" align="start" mb={2}>
                         <Text fontSize="sm" fontWeight="600" color="var(--accent-primary)">{review.make} {review.model}</Text>
                         <Badge 
@@ -229,7 +249,8 @@ export default function UserDashboard() {
                           </Box>
                         </Flex>
                       )}
-                    </Box>
+                      </Box>
+                    </motion.div>
                   ))}
                 </AnimatePresence>
               </Stack>
@@ -287,6 +308,31 @@ export default function UserDashboard() {
                   className="bg-transparent"
                 />
               </Box>
+              <Box>
+                <Text mb={2} fontSize="sm" fontWeight="500" color="var(--accent-muted)">Body Type</Text>
+                <Box position="relative">
+                  <select 
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '16px',
+                      background: 'rgba(255, 255, 255, 0.04)',
+                      border: '1px solid rgba(255, 255, 255, 0.08)',
+                      borderRadius: '12px',
+                      color: 'var(--accent-primary)',
+                      outline: 'none',
+                      appearance: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="Sedan" style={{ background: '#0F1115' }}>Sedan</option>
+                    <option value="SUV" style={{ background: '#0F1115' }}>SUV</option>
+                    <option value="Performance" style={{ background: '#0F1115' }}>Performance</option>
+                    <option value="Luxury" style={{ background: '#0F1115' }}>Luxury</option>
+                  </select>
+                </Box>
+              </Box>
             </SimpleGrid>
 
             {/* Rating */}
@@ -320,8 +366,8 @@ export default function UserDashboard() {
               <Text mb={3} fontSize="sm" fontWeight="600" color="var(--accent-primary)">Review Details</Text>
               <Textarea 
                 placeholder="How does it handle corners? What's the interior quality like? Dive deep into the driving dynamics and tactile experience..." 
-                value={reviewText}
-                onChange={(e) => setReviewText(e.target.value)}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
                 minH="350px"
                 lineHeight="1.6"
                 fontSize="md"
@@ -345,23 +391,23 @@ export default function UserDashboard() {
 
             {/* Submit CTA */}
             <Flex justify="flex-end" mt={2}>
-              <Button 
-                as={motion.button}
+              <motion.button
                 whileHover={{ y: -1, boxShadow: '0 10px 25px -5px rgba(255,255,255,0.1)' }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSubmit}
                 disabled={isSubmitting || isPending}
-                size="lg" 
-                bg="linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(200,200,200,1) 100%)" 
-                color="black" 
-                fontWeight="600" 
-                borderRadius="full"
-                px={10}
-                h="54px"
-                transition="all 0.2s ease"
-                _disabled={{ opacity: 0.7, cursor: 'not-allowed', bg: 'var(--accent-muted)' }}
-                _hover={{ opacity: 0.95 }}
-                w={{ base: '100%', md: 'auto' }}
+                style={{
+                  width: 'auto',
+                  height: '54px',
+                  padding: '0 40px',
+                  borderRadius: '9999px',
+                  fontWeight: '600',
+                  color: 'black',
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(200,200,200,1) 100%)',
+                  cursor: isSubmitting || isPending ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting || isPending ? 0.7 : 1,
+                  transition: 'all 0.2s ease'
+                }}
               >
                 {isSubmitting ? (
                   <Flex align="center" gap={3}>
@@ -371,7 +417,7 @@ export default function UserDashboard() {
                 ) : (
                   'Submit for Approval'
                 )}
-              </Button>
+              </motion.button>
             </Flex>
           </Stack>
         </GridItem>

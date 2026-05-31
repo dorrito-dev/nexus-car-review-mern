@@ -6,10 +6,38 @@ const reviewSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  car: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'Car',
-    required: true
+  make: {
+    type: String,
+    required: [true, 'Please add a car make'],
+    trim: true,
+  },
+  model: {
+    type: String,
+    required: [true, 'Please add a car model'],
+    trim: true,
+  },
+  year: {
+    type: Number,
+    required: [true, 'Please add the car year']
+  },
+  type: {
+    type: String, // e.g., Sedan, SUV, EV, Performance
+    trim: true
+  },
+  price: {
+    type: String,
+    required: [true, 'Please add the price of the car']
+  },
+  keySpecs: {
+    type: String,
+    trim: true
+  },
+  referenceLink: {
+    type: String,
+    match: [
+      /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/,
+      'Please use a valid URL'
+    ]
   },
   rating: {
     type: Number,
