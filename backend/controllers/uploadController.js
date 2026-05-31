@@ -12,7 +12,7 @@ import cloudinary from '../config/cloudinary.js';
  * The React frontend can then safely send the image directly to Cloudinary's servers, 
  * proving it has our backend's authorization via this signature.
  */
-export const getUploadSignature = (req, res) => {
+export const getUploadSignature = (req, res, next) => {
   try {
     // Generate a precise UNIX timestamp in seconds
     const timestamp = Math.round(new Date().getTime() / 1000);
@@ -35,6 +35,6 @@ export const getUploadSignature = (req, res) => {
       api_key: process.env.CLOUDINARY_API_KEY
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error generating upload signature', error: error.message });
+    next(error);
   }
 };

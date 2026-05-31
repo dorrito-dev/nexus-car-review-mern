@@ -14,13 +14,9 @@ export default function PriceSlider({ min, max, onChange }) {
     [min, max]
   )
 
-  // Debounce the onChange callback
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onChange({ min: minVal, max: maxVal })
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [minVal, maxVal, onChange])
+  const handleMouseUp = () => {
+    onChange({ min: minVal, max: maxVal })
+  }
 
   // Update track width when minVal changes
   useEffect(() => {
@@ -70,6 +66,9 @@ export default function PriceSlider({ min, max, onChange }) {
             setMinVal(value)
             minValRef.current = value
           }}
+          onMouseUp={handleMouseUp}
+          onTouchEnd={handleMouseUp}
+          onKeyUp={handleMouseUp}
           className="thumb thumb--left"
           style={{ zIndex: minVal > max - 100 ? '5' : '3' }}
         />
@@ -83,6 +82,9 @@ export default function PriceSlider({ min, max, onChange }) {
             setMaxVal(value)
             maxValRef.current = value
           }}
+          onMouseUp={handleMouseUp}
+          onTouchEnd={handleMouseUp}
+          onKeyUp={handleMouseUp}
           className="thumb thumb--right"
           style={{ zIndex: '4' }}
         />

@@ -1,56 +1,18 @@
-import { useState, useMemo } from 'react'
-import { Box, Flex, Grid, GridItem, Heading, Text, Stack, Badge, Image, IconButton } from '@chakra-ui/react'
+import { useState, useMemo, useEffect } from 'react'
+import { Box, Flex, Grid, GridItem, Heading, Text, Stack, Badge, Image, IconButton, Spinner } from '@chakra-ui/react'
 import { Star, SlidersHorizontal, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SearchWidget from './SearchWidget'
 import PriceSlider from './PriceSlider'
+import api from '../../utils/axiosConfig'
 
-const mockCars = [
-  {
-    id: 1,
-    make: 'Porsche',
-    model: 'Taycan Turbo S',
-    year: 2024,
-    rating: 4.9,
-    price: '$194,900',
-    rawPrice: 194900,
-    image: 'https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=2000&auto=format&fit=crop',
-    tags: ['Electric', 'Performance']
-  },
-  {
-    id: 2,
-    make: 'Audi',
-    model: 'e-tron GT',
-    year: 2024,
-    rating: 4.7,
-    price: '$106,395',
-    rawPrice: 106395,
-    image: 'https://images.unsplash.com/photo-1617814076367-b759c7d7e738?q=80&w=2000&auto=format&fit=crop',
-    tags: ['Electric', 'Sedan']
-  },
-  {
-    id: 3,
-    make: 'Tesla',
-    model: 'Model S Plaid',
-    year: 2024,
-    rating: 4.8,
-    price: '$89,990',
-    rawPrice: 89990,
-    image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?q=80&w=2000&auto=format&fit=crop',
-    tags: ['Electric', 'Sedan']
-  },
-  {
-    id: 4,
-    make: 'Porsche',
-    model: 'Macan EV',
-    year: 2024,
-    rating: 4.6,
-    price: '$78,800',
-    rawPrice: 78800,
-    image: 'https://images.unsplash.com/photo-1503376712351-4089304323f4?q=80&w=2000&auto=format&fit=crop',
-    tags: ['Electric', 'SUV']
-  }
-]
+// Swiper imports
+import { Swiper, SwiperSlide } from 'swiper/react'
+import { Pagination, Navigation, Autoplay, EffectFade } from 'swiper/modules'
+import 'swiper/css'
+import 'swiper/css/pagination'
+import 'swiper/css/navigation'
+import 'swiper/css/effect-fade'
 
 const CAR_TYPES = ['Sedan', 'SUV', 'Performance', 'Luxury']
 
@@ -59,24 +21,49 @@ export default function PublicView({ onReadReview }) {
   const [selectedBrand, setSelectedBrand] = useState('')
   const [priceRange, setPriceRange] = useState({ min: 50000, max: 250000 })
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
+  
+  const [reviews, setReviews] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const availableBrands = useMemo(() => Array.from(new Set(mockCars.map(c => c.make))), [])
+  useEffect(() => {
+    fetchReviews()
+  }, [])
+
+  const fetchReviews = async () => {
+    setIsLoading(true)
+    try {
+      const res = await api.get('/reviews/public')
+      setReviews(res.data)
+    } catch (error) {
+      console.error('Failed to fetch public reviews', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const availableBrands = useMemo(() => Array.from(new Set(reviews.map(c => c.make))), [reviews])
   const isFilterActive = selectedType !== '' || selectedBrand !== '' || priceRange.min > 50000 || priceRange.max < 250000
 
-  const filteredCars = useMemo(() => {
-    return mockCars.filter(car => {
-      if (selectedType && !car.tags.includes(selectedType)) return false
+  const filteredReviews = useMemo(() => {
+    return reviews.filter(car => {
+      // In a real app we might match `type` against `car.tags` if tags were implemented on the backend.
+      // For now, let's keep the filter generic or skip type filter if not present on schema.
+      // Assuming car schema doesn't have tags currently, we just skip it or filter by something else.
       if (selectedBrand && car.make !== selectedBrand) return false
-      if (car.rawPrice < priceRange.min || car.rawPrice > priceRange.max) return false
+      
+      const priceVal = car.price ? parseInt(car.price.replace(/[^0-9]/g, '')) : 0
+      if (priceVal > 0 && (priceVal < priceRange.min || priceVal > priceRange.max)) return false
       return true
     })
-  }, [selectedType, selectedBrand, priceRange])
+  }, [selectedType, selectedBrand, priceRange, reviews])
 
   const clearFilters = () => {
     setSelectedType('')
     setSelectedBrand('')
     setPriceRange({ min: 50000, max: 250000 })
   }
+
+  const featuredReviews = reviews.slice(0, 5) // Grab up to 5 latest for the carousel
 
   const FilterControls = () => (
     <Stack gap={6} w="100%">
@@ -155,60 +142,97 @@ export default function PublicView({ onReadReview }) {
     </Stack>
   )
 
+  if (isLoading) {
+    return (
+      <Flex h="60vh" justify="center" align="center">
+        <Spinner size="xl" color="var(--accent-primary)" />
+      </Flex>
+    )
+  }
+
   return (
     <Box position="relative">
       <SearchWidget />
 
-      {/* Hero Section */}
-      <Box 
-        className="glass-panel" 
-        p={{ base: 6, md: 16 }} 
-        mb={8} 
-        position="relative" 
-        overflow="hidden"
-        minH={{ base: '350px', md: '450px' }}
-        display="flex"
-        alignItems="center"
-        borderRadius="3xl"
-      >
+      {/* Hero Section / Carousel */}
+      {featuredReviews.length > 0 && (
         <Box 
-          position="absolute" 
-          top={0} left={0} right={0} bottom={0} 
-          bgImage={`url(${mockCars[0].image})`}
-          bgSize="cover"
-          bgPosition="center"
-          opacity={0.15}
-          zIndex={0}
-          filter="grayscale(100%)"
-        />
-        <Box 
-          position="absolute" 
-          top={0} left={0} right={0} bottom={0} 
-          bg="linear-gradient(to right, var(--bg-surface) 0%, rgba(22, 25, 32, 0.4) 100%)"
-          zIndex={1}
-        />
-        
-        <Box position="relative" zIndex={2} maxW="600px">
-          <Badge bg="var(--accent-primary)" color="var(--bg-base)" mb={6} px={4} py={1.5} borderRadius="full" fontWeight="600" textTransform="uppercase" letterSpacing="wider" fontSize="xs">
-            Editorial Review
-          </Badge>
-          <Heading as="h1" size={{ base: '3xl', md: '4xl' }} mb={4} fontWeight="300" letterSpacing="tight" lineHeight="1.1">
-            Silence.<br/>
-            <Box as="span" fontWeight="700" color="var(--accent-primary)">Reimagined.</Box>
-          </Heading>
-          <Text fontSize={{ base: 'md', md: 'lg' }} color="var(--accent-muted)" mb={8} maxW="400px" lineHeight="1.6">
-            Explore the raw power of electric acceleration wrapped in an uncompromisingly minimal cabin.
-          </Text>
-          <Flex gap={4}>
-            <Box as="button" onClick={() => onReadReview(mockCars[0])} bg="var(--accent-primary)" color="var(--bg-base)" px={8} py={3.5} borderRadius="full" fontWeight="600" _hover={{ opacity: 0.9 }} _active={{ transform: 'scale(0.98)' }} transition="var(--transition-smooth)">
-              Read Review
-            </Box>
-            <Box as="button" bg="transparent" border="1px solid var(--glass-border)" color="var(--accent-primary)" px={8} py={3.5} borderRadius="full" fontWeight="600" _hover={{ bg: 'whiteAlpha.100' }} _active={{ transform: 'scale(0.98)' }} transition="var(--transition-smooth)">
-              Gallery
-            </Box>
-          </Flex>
+          mb={10} 
+          borderRadius="3xl"
+          overflow="hidden"
+          boxShadow="0 20px 40px rgba(0,0,0,0.5)"
+          className="swiper-container-wrapper"
+        >
+          <Swiper
+            modules={[Pagination, Navigation, Autoplay, EffectFade]}
+            effect="fade"
+            spaceBetween={0}
+            slidesPerView={1}
+            navigation
+            pagination={{ clickable: true }}
+            autoplay={{ delay: 5000, disableOnInteraction: false }}
+            loop={featuredReviews.length > 1}
+            style={{ '--swiper-theme-color': 'var(--accent-primary)', '--swiper-navigation-color': 'white' }}
+          >
+            {featuredReviews.map((car, idx) => {
+              const bgImg = car.images?.length > 0 ? car.images[0] : 'https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=2000'
+              return (
+                <SwiperSlide key={car._id}>
+                  <Box 
+                    className="glass-panel" 
+                    p={{ base: 6, md: 16 }} 
+                    position="relative" 
+                    overflow="hidden"
+                    minH={{ base: '400px', md: '500px' }}
+                    display="flex"
+                    alignItems="center"
+                  >
+                    <Box 
+                      position="absolute" 
+                      top={0} left={0} right={0} bottom={0} 
+                      bgImage={`url(${bgImg})`}
+                      bgSize="cover"
+                      bgPosition="center"
+                      zIndex={0}
+                      filter="grayscale(40%)"
+                    />
+                    <Box 
+                      position="absolute" 
+                      top={0} left={0} right={0} bottom={0} 
+                      bg="linear-gradient(to top, rgba(15, 17, 21, 1) 0%, rgba(15, 17, 21, 0.4) 50%, rgba(0,0,0,0) 100%)"
+                      zIndex={1}
+                    />
+                    <Box 
+                      position="absolute" 
+                      top={0} left={0} right={0} bottom={0} 
+                      bg="linear-gradient(to right, rgba(15, 17, 21, 0.9) 0%, rgba(15, 17, 21, 0.2) 100%)"
+                      zIndex={1}
+                    />
+                    
+                    <Box position="relative" zIndex={2} maxW="600px" pl={{ md: 10 }}>
+                      <Badge bg="var(--accent-primary)" color="var(--bg-base)" mb={6} px={4} py={1.5} borderRadius="full" fontWeight="600" textTransform="uppercase" letterSpacing="wider" fontSize="xs">
+                        Featured Review
+                      </Badge>
+                      <Heading as="h1" size={{ base: '3xl', md: '4xl' }} mb={4} fontWeight="300" letterSpacing="tight" lineHeight="1.1">
+                        {car.make}<br/>
+                        <Box as="span" fontWeight="700" color="var(--accent-primary)">{car.model}</Box>
+                      </Heading>
+                      <Text fontSize={{ base: 'md', md: 'lg' }} color="var(--accent-muted)" mb={8} maxW="500px" lineHeight="1.6" noOfLines={2}>
+                        {car.reviewText}
+                      </Text>
+                      <Flex gap={4}>
+                        <Box as="button" onClick={() => onReadReview(car)} bg="var(--accent-primary)" color="var(--bg-base)" px={8} py={3.5} borderRadius="full" fontWeight="600" _hover={{ opacity: 0.9 }} _active={{ transform: 'scale(0.98)' }} transition="var(--transition-smooth)">
+                          Read Review
+                        </Box>
+                      </Flex>
+                    </Box>
+                  </Box>
+                </SwiperSlide>
+              )
+            })}
+          </Swiper>
         </Box>
-      </Box>
+      )}
 
       {/* Filter Toggle Button */}
       <Flex justify="flex-end" mb={6}>
@@ -304,51 +328,48 @@ export default function PublicView({ onReadReview }) {
       {/* Car Grid */}
       <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={8}>
         <AnimatePresence>
-          {filteredCars.map(car => (
-            <GridItem 
-              as={motion.div}
-              key={car.id} 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              layout
-              className="glass-panel" 
-              p={3} 
-              borderRadius="2xl" 
-              position="relative" 
-              _hover={{ transform: 'translateY(-4px)', boxShadow: '0 12px 40px -8px rgba(0,0,0,0.8)' }}
-            >
-              <Box h="220px" overflow="hidden" position="relative" borderRadius="xl" mb={4}>
-                <Image src={car.image} w="100%" h="100%" objectFit="cover" transition="transform 0.6s ease" _hover={{ transform: 'scale(1.05)' }} filter="grayscale(20%)" />
-                <Badge position="absolute" top={3} right={3} bg="rgba(0,0,0,0.6)" color="white" backdropFilter="blur(8px)" borderRadius="full" px={3} py={1.5} display="flex" alignItems="center" gap={1.5} fontWeight="600">
-                  <Star size={12} color="var(--accent-primary)" fill="var(--accent-primary)" strokeWidth={1.5} />
-                  {car.rating}
-                </Badge>
-              </Box>
-              <Box px={2} pb={2}>
-                <Stack direction="row" mb={3} wrap="wrap">
-                  {car.tags.map(tag => (
-                    <Text key={tag} fontSize="xs" color="var(--accent-muted)" textTransform="uppercase" letterSpacing="wider" fontWeight="600">
-                      {tag}
-                    </Text>
-                  ))}
-                </Stack>
-                <Heading size="lg" mb={1} fontWeight="600" letterSpacing="tight">{car.model}</Heading>
-                <Flex justify="space-between" align="center" mt={4}>
-                  <Text color="var(--accent-muted)" fontSize="sm">{car.make} • {car.year}</Text>
-                  <Text color="var(--accent-primary)" fontWeight="500">{car.price}</Text>
-                </Flex>
-                <Box mt={4} as="button" w="100%" onClick={() => onReadReview(car)} bg="whiteAlpha.100" color="var(--accent-primary)" px={4} py={2} borderRadius="xl" fontWeight="500" _hover={{ bg: 'whiteAlpha.200' }} _active={{ transform: 'scale(0.98)' }} transition="var(--transition-smooth)">
-                  Read Review
+          {filteredReviews.map(car => {
+            const fallbackImg = 'https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=2000'
+            const displayImg = car.images?.length > 0 ? car.images[0] : fallbackImg
+            return (
+              <GridItem 
+                as={motion.div}
+                key={car._id} 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
+                layout
+                className="glass-panel" 
+                p={3} 
+                borderRadius="2xl" 
+                position="relative" 
+                _hover={{ transform: 'translateY(-4px)', boxShadow: '0 12px 40px -8px rgba(0,0,0,0.8)' }}
+              >
+                <Box h="220px" overflow="hidden" position="relative" borderRadius="xl" mb={4}>
+                  <Image src={displayImg} w="100%" h="100%" objectFit="cover" transition="transform 0.6s ease" _hover={{ transform: 'scale(1.05)' }} filter="grayscale(20%)" />
+                  <Badge position="absolute" top={3} right={3} bg="rgba(0,0,0,0.6)" color="white" backdropFilter="blur(8px)" borderRadius="full" px={3} py={1.5} display="flex" alignItems="center" gap={1.5} fontWeight="600">
+                    <Star size={12} color="var(--accent-primary)" fill="var(--accent-primary)" strokeWidth={1.5} />
+                    {car.rating}
+                  </Badge>
                 </Box>
-              </Box>
-            </GridItem>
-          ))}
+                <Box px={2} pb={2}>
+                  <Heading size="lg" mb={1} fontWeight="600" letterSpacing="tight">{car.model}</Heading>
+                  <Flex justify="space-between" align="center" mt={4}>
+                    <Text color="var(--accent-muted)" fontSize="sm">{car.make} • {car.year}</Text>
+                    <Text color="var(--accent-primary)" fontWeight="500">{car.price || 'N/A'}</Text>
+                  </Flex>
+                  <Box mt={4} as="button" w="100%" onClick={() => onReadReview(car)} bg="whiteAlpha.100" color="var(--accent-primary)" px={4} py={2} borderRadius="xl" fontWeight="500" _hover={{ bg: 'whiteAlpha.200' }} _active={{ transform: 'scale(0.98)' }} transition="var(--transition-smooth)">
+                    Read Review
+                  </Box>
+                </Box>
+              </GridItem>
+            )
+          })}
         </AnimatePresence>
       </Grid>
       
-      {filteredCars.length === 0 && (
+      {filteredReviews.length === 0 && (
         <Flex direction="column" align="center" justify="center" py={20} color="var(--accent-muted)">
           <Text fontSize="lg" mb={4}>No vehicles match your criteria.</Text>
           <Box as="button" onClick={clearFilters} color="var(--accent-primary)" fontWeight="500">

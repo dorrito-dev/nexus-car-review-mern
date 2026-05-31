@@ -1,20 +1,106 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Box, Heading, Text, Input, Textarea, Button, Flex, Stack, SimpleGrid, Spinner, Grid, GridItem, Badge } from '@chakra-ui/react'
-import { UploadCloud, Star, PenTool, DollarSign, Link, AlertTriangle } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { UploadCloud, Star, PenTool, DollarSign, Link as LinkIcon, AlertTriangle, AlertCircle, Image as ImageIcon } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../context/AuthContext'
+import api from '../../utils/axiosConfig'
 
 export default function UserDashboard() {
   const { user } = useAuth()
+  
+  // Form State
+  const [make, setMake] = useState('')
+  const [model, setModel] = useState('')
+  const [year, setYear] = useState('')
   const [rating, setRating] = useState(0)
+  const [reviewText, setReviewText] = useState('')
+  const [price, setPrice] = useState('')
+  const [referenceLink, setReferenceLink] = useState('')
+  const [keySpecs, setKeySpecs] = useState('')
+  const [images, setImages] = useState([])
+  
   const [hoveredStar, setHoveredStar] = useState(0)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
 
-  const isPending = user?.status === 'pending'
+  // My Posts State
+  const [myReviews, setMyReviews] = useState([])
+  const [isLoadingReviews, setIsLoadingReviews] = useState(true)
+  const [activeTab, setActiveTab] = useState('All') // All, pending, approved, rejected
 
-  const handleSubmit = () => {
+  const isPending = user?.status === 'pending' || user?.status === 'banned'
+
+  useEffect(() => {
+    fetchMyReviews()
+  }, [])
+
+  const fetchMyReviews = async () => {
+    try {
+      const res = await api.get('/reviews/me')
+      setMyReviews(res.data)
+    } catch (error) {
+      alert(`Error fetching history: ${error.response?.data?.message || 'Something went wrong.'}`)
+    } finally {
+      setIsLoadingReviews(false)
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (!make || !model || !rating || !reviewText) {
+      alert('Missing Fields: Please provide make, model, rating, and review details.')
+      return
+    }
+
     setIsSubmitting(true)
-    setTimeout(() => setIsSubmitting(false), 2000)
+    try {
+      const payload = {
+        make,
+        model,
+        year: year ? parseInt(year) : 2024,
+        rating,
+        reviewText,
+        price,
+        referenceLink,
+        keySpecs,
+        images
+      }
+
+      await api.post('/reviews', payload)
+      
+      alert('Review Submitted: Your review has been sent for admin approval.')
+
+      // Reset form
+      setMake('')
+      setModel('')
+      setYear('')
+      setRating(0)
+      setReviewText('')
+      setPrice('')
+      setReferenceLink('')
+      setKeySpecs('')
+      setImages([])
+      
+      // Refresh history
+      fetchMyReviews()
+    } catch (error) {
+      alert(`Submission Failed: ${error.response?.data?.message || 'Something went wrong.'}`)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Handle Mock Image Upload for now (simulate Cloudinary)
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setIsUploading(true)
+    
+    // Simulate upload delay
+    setTimeout(() => {
+      setImages([...images, 'https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=1000'])
+      setIsUploading(false)
+      alert('Image Uploaded successfully.')
+    }, 1500)
   }
 
   const inputStyles = {
@@ -31,6 +117,11 @@ export default function UserDashboard() {
       bg: 'rgba(255, 255, 255, 0.06)'
     }
   }
+
+  const filteredReviews = myReviews.filter(review => {
+    if (activeTab === 'All') return true
+    return review.status === activeTab.toLowerCase()
+  })
 
   return (
     <Box maxW="1400px" mx="auto">
@@ -66,27 +157,83 @@ export default function UserDashboard() {
 
           <Box>
             <Text fontSize="xs" textTransform="uppercase" letterSpacing="widest" color="var(--accent-muted)" mb={4} fontWeight="600">
-              Your History
+              My Posts
             </Text>
-            <Flex justify="space-between" align="center" py={3} borderBottom="1px solid var(--glass-border)">
-              <Flex gap={3} align="center"><PenTool size={16} color="var(--accent-muted)"/><Text fontSize="sm" color="var(--accent-muted)">Total Posts</Text></Flex>
-              <Text fontWeight="600" fontSize="md">12</Text>
-            </Flex>
-            <Flex justify="space-between" align="center" py={3}>
-              <Flex gap={3} align="center"><Star size={16} color="var(--accent-muted)"/><Text fontSize="sm" color="var(--accent-muted)">Helpful Votes</Text></Flex>
-              <Text fontWeight="600" fontSize="md">340</Text>
-            </Flex>
             
-            {/* Example of Pending Review Badge in History */}
-            <Box mt={6} p={4} bg="rgba(255,255,255,0.03)" borderRadius="xl" border="1px solid var(--glass-border)">
-              <Flex justify="space-between" align="start" mb={2}>
-                <Text fontSize="sm" fontWeight="600" color="var(--accent-primary)">Porsche 911 GT3</Text>
-                <Badge colorScheme="orange" variant="subtle" fontSize="2xs" px={2} py={0.5} borderRadius="full">
-                  Pending Approval
-                </Badge>
+            {/* Tabs / Pills */}
+            <Flex gap={2} mb={6} flexWrap="wrap">
+              {['All', 'Pending', 'Approved', 'Rejected'].map(tab => (
+                <Box
+                  key={tab}
+                  as="button"
+                  onClick={() => setActiveTab(tab)}
+                  px={3} py={1}
+                  borderRadius="full"
+                  fontSize="xs"
+                  fontWeight="600"
+                  transition="all 0.2s"
+                  bg={activeTab === tab ? 'var(--accent-primary)' : 'rgba(255,255,255,0.05)'}
+                  color={activeTab === tab ? 'black' : 'var(--accent-muted)'}
+                  _hover={activeTab !== tab && { bg: 'rgba(255,255,255,0.1)', color: 'white' }}
+                >
+                  {tab}
+                </Box>
+              ))}
+            </Flex>
+
+            {isLoadingReviews ? (
+              <Flex justify="center" py={10}>
+                <Spinner size="md" color="var(--accent-muted)" />
               </Flex>
-              <Text fontSize="xs" color="var(--accent-muted)">Submitted today</Text>
-            </Box>
+            ) : filteredReviews.length === 0 ? (
+              <Text fontSize="sm" color="var(--accent-muted)" textAlign="center" py={6}>No reviews found.</Text>
+            ) : (
+              <Stack gap={4}>
+                <AnimatePresence mode="popLayout">
+                  {filteredReviews.map((review) => (
+                    <Box 
+                      key={review._id}
+                      as={motion.div}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      p={4} 
+                      bg="rgba(255,255,255,0.03)" 
+                      borderRadius="xl" 
+                      border="1px solid"
+                      borderColor={review.status === 'rejected' ? 'red.800' : 'var(--glass-border)'}
+                    >
+                      <Flex justify="space-between" align="start" mb={2}>
+                        <Text fontSize="sm" fontWeight="600" color="var(--accent-primary)">{review.make} {review.model}</Text>
+                        <Badge 
+                          colorScheme={review.status === 'approved' ? 'green' : review.status === 'rejected' ? 'red' : 'orange'} 
+                          variant="subtle" 
+                          fontSize="2xs" 
+                          px={2} py={0.5} 
+                          borderRadius="full"
+                        >
+                          {review.status}
+                        </Badge>
+                      </Flex>
+                      <Text fontSize="xs" color="var(--accent-muted)" mb={review.status === 'rejected' && review.adminMessage ? 3 : 0}>
+                        {new Date(review.createdAt).toLocaleDateString()}
+                      </Text>
+
+                      {review.status === 'rejected' && review.adminMessage && (
+                        <Flex mt={3} p={3} bg="red.900" color="red.100" borderRadius="md" fontSize="xs" gap={2} align="start">
+                          <AlertCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                          <Box>
+                            <Text fontWeight="600" mb={1}>Admin Feedback:</Text>
+                            <Text>{review.adminMessage}</Text>
+                          </Box>
+                        </Flex>
+                      )}
+                    </Box>
+                  ))}
+                </AnimatePresence>
+              </Stack>
+            )}
           </Box>
         </GridItem>
 
@@ -98,12 +245,14 @@ export default function UserDashboard() {
           </Box>
 
           <Stack gap={8}>
-            {/* Make / Model */}
-            <SimpleGrid columns={2} gap={6}>
+            {/* Make / Model / Year */}
+            <SimpleGrid columns={{ base: 1, md: 3 }} gap={6}>
               <Box>
                 <Text mb={2} fontSize="sm" fontWeight="500" color="var(--accent-muted)">Make</Text>
                 <Input 
                   placeholder="e.g. Porsche" 
+                  value={make}
+                  onChange={(e) => setMake(e.target.value)}
                   variant="unstyled" 
                   p={4}
                   {...inputStyles}
@@ -115,6 +264,22 @@ export default function UserDashboard() {
                 <Text mb={2} fontSize="sm" fontWeight="500" color="var(--accent-muted)">Model</Text>
                 <Input 
                   placeholder="e.g. 911 GT3" 
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  variant="unstyled" 
+                  p={4}
+                  {...inputStyles}
+                  bg="transparent"
+                  className="bg-transparent"
+                />
+              </Box>
+              <Box>
+                <Text mb={2} fontSize="sm" fontWeight="500" color="var(--accent-muted)">Year</Text>
+                <Input 
+                  placeholder="e.g. 2024"
+                  type="number" 
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
                   variant="unstyled" 
                   p={4}
                   {...inputStyles}
@@ -155,6 +320,8 @@ export default function UserDashboard() {
               <Text mb={3} fontSize="sm" fontWeight="600" color="var(--accent-primary)">Review Details</Text>
               <Textarea 
                 placeholder="How does it handle corners? What's the interior quality like? Dive deep into the driving dynamics and tactile experience..." 
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
                 minH="350px"
                 lineHeight="1.6"
                 fontSize="md"
@@ -210,27 +377,54 @@ export default function UserDashboard() {
         </GridItem>
 
         {/* Right Panel: Metadata */}
-        <GridItem>
+        <GridItem opacity={isPending ? 0.6 : 1} pointerEvents={isPending ? 'none' : 'auto'}>
           <Stack gap={8}>
             {/* Image Upload */}
             <Box className="glass-panel" p={6}>
               <Text mb={4} fontSize="sm" fontWeight="600" color="var(--accent-muted)" textTransform="uppercase" letterSpacing="widest">Imagery</Text>
-              <Flex 
-                direction="column" 
-                align="center" 
-                justify="center" 
-                p={8} 
-                border="1px dashed rgba(255, 255, 255, 0.15)" 
-                borderRadius="xl"
-                bg="transparent"
-                cursor="pointer"
-                _hover={{ bg: 'rgba(255, 255, 255, 0.02)', borderColor: 'rgba(255, 255, 255, 0.3)' }}
-                transition="all 0.2s ease"
-              >
-                <UploadCloud size={32} color="var(--accent-muted)" strokeWidth={1.5} style={{ marginBottom: '12px' }} />
-                <Text fontWeight="500" color="var(--accent-primary)" fontSize="sm" textAlign="center" mb={1}>Click to upload</Text>
-                <Text fontSize="xs" color="var(--accent-muted)" textAlign="center">SVG, PNG, JPG (max 5MB)</Text>
-              </Flex>
+              
+              <Box position="relative">
+                <Input 
+                  type="file"
+                  accept="image/*"
+                  position="absolute"
+                  top={0} left={0} w="100%" h="100%"
+                  opacity={0}
+                  cursor="pointer"
+                  onChange={handleImageUpload}
+                  disabled={isUploading}
+                  zIndex={2}
+                />
+                <Flex 
+                  direction="column" 
+                  align="center" 
+                  justify="center" 
+                  p={8} 
+                  border="1px dashed rgba(255, 255, 255, 0.15)" 
+                  borderRadius="xl"
+                  bg="transparent"
+                  _hover={{ bg: 'rgba(255, 255, 255, 0.02)', borderColor: 'rgba(255, 255, 255, 0.3)' }}
+                  transition="all 0.2s ease"
+                >
+                  {isUploading ? (
+                    <Spinner size="md" color="var(--accent-primary)" mb={2}/>
+                  ) : (
+                    <UploadCloud size={32} color="var(--accent-muted)" strokeWidth={1.5} style={{ marginBottom: '12px' }} />
+                  )}
+                  <Text fontWeight="500" color="var(--accent-primary)" fontSize="sm" textAlign="center" mb={1}>Click to upload</Text>
+                  <Text fontSize="xs" color="var(--accent-muted)" textAlign="center">SVG, PNG, JPG (max 5MB)</Text>
+                </Flex>
+              </Box>
+
+              {images.length > 0 && (
+                <Flex gap={2} mt={4} wrap="wrap">
+                  {images.map((img, idx) => (
+                    <Box key={idx} w="60px" h="60px" borderRadius="lg" overflow="hidden" border="1px solid var(--glass-border)">
+                      <img src={img} alt="Uploaded" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </Box>
+                  ))}
+                </Flex>
+              )}
             </Box>
 
             {/* Technical Specifications */}
@@ -247,6 +441,8 @@ export default function UserDashboard() {
                     <Input 
                       variant="unstyled" 
                       placeholder="e.g. 194,900" 
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
                       _placeholder={{ color: 'whiteAlpha.400' }}
                       _focus={{ outline: 'none' }}
                       w="100%"
@@ -258,10 +454,12 @@ export default function UserDashboard() {
                 <Box>
                   <Text mb={2} fontSize="xs" fontWeight="500" color="var(--accent-muted)">Reference Link</Text>
                   <Flex align="center" p={3} {...inputStyles}>
-                    <Link size={16} color="var(--accent-muted)" style={{ marginRight: '8px' }} />
+                    <LinkIcon size={16} color="var(--accent-muted)" style={{ marginRight: '8px' }} />
                     <Input 
                       variant="unstyled" 
                       placeholder="e.g. https://porsche.com" 
+                      value={referenceLink}
+                      onChange={(e) => setReferenceLink(e.target.value)}
                       _placeholder={{ color: 'whiteAlpha.400' }}
                       _focus={{ outline: 'none' }}
                       w="100%"
@@ -274,6 +472,8 @@ export default function UserDashboard() {
                   <Text mb={2} fontSize="xs" fontWeight="500" color="var(--accent-muted)">Key Specs</Text>
                   <Textarea 
                     placeholder="e.g. Range: 300 miles, 0-60mph: 2.6s..." 
+                    value={keySpecs}
+                    onChange={(e) => setKeySpecs(e.target.value)}
                     rows={3}
                     variant="unstyled" 
                     p={3}

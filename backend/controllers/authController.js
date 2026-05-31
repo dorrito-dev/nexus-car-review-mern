@@ -12,7 +12,7 @@ const generateToken = (id, role) => {
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
   try {
     const { name, email, password, contactInfo, experience, portfolioLink } = req.body;
 
@@ -45,14 +45,21 @@ export const register = async (req, res) => {
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    // Gracefully handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ 
+        message: 'Validation Error', 
+        error: error.message 
+      });
+    }
+    next(error);
   }
 };
 
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -73,6 +80,6 @@ export const login = async (req, res) => {
       res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server error', error: error.message });
+    next(error);
   }
 };

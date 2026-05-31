@@ -35,6 +35,10 @@ const reviewSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
   },
+  adminMessage: {
+    type: String,
+    trim: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
