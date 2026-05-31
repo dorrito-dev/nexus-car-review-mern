@@ -1,4 +1,4 @@
-import { ChakraProvider, defaultSystem, Box } from '@chakra-ui/react'
+import { ChakraProvider, defaultSystem, Box, createSystem, defaultConfig } from '@chakra-ui/react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navbar from './components/navigation/Navbar'
@@ -50,9 +50,20 @@ function AppRoutes() {
   )
 }
 
+const system = createSystem(defaultConfig, {
+  theme: {
+    tokens: {
+      fonts: {
+        heading: { value: `'Montserrat', sans-serif` },
+        body: { value: `'Montserrat', sans-serif` }
+      }
+    }
+  }
+})
+
 function App() {
   return (
-    <ChakraProvider value={defaultSystem}>
+    <ChakraProvider value={system}>
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
