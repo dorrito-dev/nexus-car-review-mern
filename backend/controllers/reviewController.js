@@ -34,10 +34,15 @@ export const createReview = async (req, res, next) => {
 
     res.status(201).json(review);
   } catch (error) {
-    next(error);
+    console.error("Review Submission Error:", error);
+    // Force a response so the frontend UI drops the processing state
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error during review processing", 
+      error: error.message 
+    });
   }
 };
-
 // @desc    Get all approved public reviews
 // @route   GET /api/reviews/public
 // @access  Public

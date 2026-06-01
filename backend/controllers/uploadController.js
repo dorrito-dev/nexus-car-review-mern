@@ -14,6 +14,13 @@ import cloudinary from '../config/cloudinary.js';
  */
 export const getUploadSignature = (req, res, next) => {
   try {
+    // Strict production check to prevent hanging sockets
+    if (!process.env.CLOUDINARY_API_SECRET || !process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Cloudinary environment variables are missing on the production server. Uploads disabled.' 
+      });
+    }
     // Generate a precise UNIX timestamp in seconds
     const timestamp = Math.round(new Date().getTime() / 1000);
     

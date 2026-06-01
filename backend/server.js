@@ -25,7 +25,7 @@ const app = express();
  */
 // Safely configure CORS to allow requests from our frontend
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', 
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 };
 app.use(cors(corsOptions));
@@ -43,7 +43,7 @@ app.use('/api/upload', uploadRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'API is running beautifully.' });
+  res.status(200).json({ status: 'API is running successfully.' });
 });
 
 /**
