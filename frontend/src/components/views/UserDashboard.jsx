@@ -46,14 +46,56 @@ export default function UserDashboard() {
     }
   }
 
+  const [submitError, setSubmitError] = useState(null)
+
   const handleSubmit = async () => {
     if (!make || !model || !rating || !content || !price) {
-      alert('Missing Fields: Please provide make, model, price, rating, and review details.')
+      setSubmitError('Missing Fields: Please provide make, model, price, rating, and review details.')
+      setTimeout(() => setSubmitError(null), 5000)
       return
     }
 
     setIsSubmitting(true)
+    setSubmitError(null)
+
     try {
+      // Step 1: Cloudinary Upload Phase (Process any pending File objects)
+      const finalImageUrls = [];
+      for (const imageItem of images) {
+        if (typeof imageItem === 'string') {
+          finalImageUrls.push(imageItem);
+        } else if (imageItem instanceof File) {
+          try {
+            const sigRes = await api.get('/upload/signature');
+            const { timestamp, signature, cloud_name, api_key } = sigRes.data;
+
+            const formData = new FormData();
+            formData.append('file', imageItem);
+            formData.append('api_key', api_key);
+            formData.append('timestamp', timestamp);
+            formData.append('signature', signature);
+            formData.append('folder', 'nexus_car_reviews');
+
+            const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/image/upload`, {
+              method: 'POST',
+              body: formData
+            });
+
+            if (!uploadRes.ok) {
+              const cloudErr = await uploadRes.json();
+              throw new Error(cloudErr.error?.message || "Cloudinary rejected the upload.");
+            }
+
+            const uploadData = await uploadRes.json();
+            finalImageUrls.push(uploadData.secure_url);
+          } catch (uploadError) {
+            console.error("Cloudinary Upload Failure:", uploadError);
+            throw new Error(`Image upload failed: ${uploadError.message}`);
+          }
+        }
+      }
+
+      // Step 2: Database Submission Phase
       const payload = {
         make,
         model,
@@ -64,7 +106,7 @@ export default function UserDashboard() {
         price,
         referenceLink,
         keySpecs,
-        images
+        images: finalImageUrls
       }
 
       await api.post('/reviews', payload)
@@ -86,24 +128,26 @@ export default function UserDashboard() {
       // Refresh history
       fetchMyReviews()
     } catch (error) {
-      alert(`Submission Failed: ${error.response?.data?.message || 'Something went wrong.'}`)
+      const errorMessage = error.response?.data?.message || error.message || "An unexpected error occurred during submission.";
+      console.error("Submission Failure:", errorMessage);
+      setSubmitError(errorMessage);
+      setTimeout(() => setSubmitError(null), 8000);
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Handle Mock Image Upload for now (simulate Cloudinary)
+  // Queue the file for upload during the final submit sequence
   const handleImageUpload = (e) => {
     const file = e.target.files[0]
     if (!file) return
     setIsUploading(true)
     
-    // Simulate upload delay
+    // Briefly show spinner to acknowledge selection
     setTimeout(() => {
-      setImages([...images, 'https://images.unsplash.com/photo-1614200187524-dc4b892acf16?q=80&w=1000'])
+      setImages([...images, file])
       setIsUploading(false)
-      alert('Image Uploaded successfully.')
-    }, 1500)
+    }, 400)
   }
 
   const inputStyles = {
@@ -389,6 +433,32 @@ export default function UserDashboard() {
               />
             </Box>
 
+            {/* Error Toast */}
+            <AnimatePresence>
+              {submitError && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  exit={{ opacity: 0, y: 10 }}
+                >
+                  <Flex 
+                    bg="red.900" 
+                    color="red.100" 
+                    p={4} 
+                    borderRadius="xl" 
+                    mb={4}
+                    align="center" 
+                    gap={3}
+                    border="1px solid"
+                    borderColor="red.700"
+                  >
+                    <AlertCircle size={20} />
+                    <Text fontWeight="600" fontSize="sm">{submitError}</Text>
+                  </Flex>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Submit CTA */}
             <Flex justify="flex-end" mt={2}>
               <motion.button
@@ -466,7 +536,11 @@ export default function UserDashboard() {
                 <Flex gap={2} mt={4} wrap="wrap">
                   {images.map((img, idx) => (
                     <Box key={idx} w="60px" h="60px" borderRadius="lg" overflow="hidden" border="1px solid var(--glass-border)">
-                      <img src={img} alt="Uploaded" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img 
+                        src={typeof img === 'string' ? img : URL.createObjectURL(img)} 
+                        alt="Uploaded preview" 
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      />
                     </Box>
                   ))}
                 </Flex>
